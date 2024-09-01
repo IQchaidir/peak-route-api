@@ -1,18 +1,8 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { z } from "zod"
 import { climbingRouteService } from "../services/climbingRouteService"
+import { climbingRouteIdSchema, climbingRouteRequestSchema } from "../schema/climbingRoutesSchema"
 
 const API_TAG = ["Climbing Routes"]
-
-const ClimbingRouteRequestSchema = z.object({
-    mountain_id: z.number().int().positive(),
-    route_name: z.string().min(1, "Route name is required"),
-    length: z.number().positive(),
-})
-
-const ClimbingRouteIdSchema = z.object({
-    id: z.string().regex(/^\d+$/, "Invalid ID format"),
-})
 
 export const climbingRouteRoute = new OpenAPIHono()
     .openapi(
@@ -41,7 +31,7 @@ export const climbingRouteRoute = new OpenAPIHono()
             path: "/{id}",
             description: "Get climbing route by id",
             request: {
-                params: ClimbingRouteIdSchema,
+                params: climbingRouteIdSchema,
             },
             responses: {
                 200: {
@@ -75,7 +65,7 @@ export const climbingRouteRoute = new OpenAPIHono()
                 body: {
                     content: {
                         "application/json": {
-                            schema: ClimbingRouteRequestSchema,
+                            schema: climbingRouteRequestSchema,
                         },
                     },
                 },
@@ -84,11 +74,18 @@ export const climbingRouteRoute = new OpenAPIHono()
                 201: {
                     description: "Climbing route created",
                 },
+                409: {
+                    description: "Climbing route with this name already exists",
+                },
             },
             tags: API_TAG,
         },
         async (c) => {
             const body = c.req.valid("json")
+
+            if (climbingRouteService.isNameExists(body.route_name)) {
+                return c.json({ message: "Climbing route with this name already exists" }, 409)
+            }
 
             const routeId = climbingRouteService.create(body)
             const route = climbingRouteService.getById(routeId)
@@ -126,7 +123,7 @@ export const climbingRouteRoute = new OpenAPIHono()
             path: "/{id}",
             description: "Delete climbing route by id",
             request: {
-                params: ClimbingRouteIdSchema,
+                params: climbingRouteIdSchema,
             },
             responses: {
                 200: {
@@ -157,11 +154,11 @@ export const climbingRouteRoute = new OpenAPIHono()
             path: "/{id}",
             description: "Update climbing route by id",
             request: {
-                params: ClimbingRouteIdSchema,
+                params: climbingRouteIdSchema,
                 body: {
                     content: {
                         "application/json": {
-                            schema: ClimbingRouteRequestSchema,
+                            schema: climbingRouteRequestSchema,
                         },
                     },
                 },
@@ -172,6 +169,9 @@ export const climbingRouteRoute = new OpenAPIHono()
                 },
                 404: {
                     description: "Climbing route not found",
+                },
+                409: {
+                    description: "Climbing route with this name already exists",
                 },
             },
             tags: API_TAG,
@@ -186,12 +186,21 @@ export const climbingRouteRoute = new OpenAPIHono()
                 return c.json({ message: "Climbing route not found" }, 404)
             }
 
+            const currentRoute = climbingRouteService.getById(id)
+            if (
+                currentRoute &&
+                currentRoute.route_name !== body.route_name &&
+                climbingRouteService.isNameExists(body.route_name)
+            ) {
+                return c.json({ message: "Climbing route with this name already exists" }, 409)
+            }
+
             climbingRouteService.update(id, body)
-            const route = climbingRouteService.getById(id)
+            const updatedRoute = climbingRouteService.getById(id)
 
             return c.json({
                 message: "Success",
-                data: route,
+                data: updatedRoute,
             })
         }
     )

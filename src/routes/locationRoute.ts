@@ -1,16 +1,8 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { z } from "zod"
 import { locationService } from "../services/locationService"
+import { locationIdSchema, locationRequestSchema } from "../schema/locationSchema"
 
 const API_TAG = ["Locations"]
-
-const LocationRequestSchema = z.object({
-    name: z.string().min(1, "Name is required"),
-})
-
-const LocationIdSchema = z.object({
-    id: z.string().regex(/^\d+$/, "Invalid ID format"),
-})
 
 export const locationRoute = new OpenAPIHono()
     .openapi(
@@ -40,7 +32,7 @@ export const locationRoute = new OpenAPIHono()
             path: "/{id}",
             description: "Get location by id",
             request: {
-                params: LocationIdSchema,
+                params: locationIdSchema,
             },
             responses: {
                 200: {
@@ -53,16 +45,22 @@ export const locationRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            const location = locationService.getById(Number(c.req.param("id")))
+            try {
+                const locationId = Number(c.req.param("id"))
+                const location = locationService.getById(locationId)
 
-            if (!location) {
-                return c.json({ message: "Location not found" }, 404)
+                if (!location) {
+                    return c.json({ message: "Location not found" }, 404)
+                }
+
+                return c.json({
+                    message: "Success",
+                    data: location,
+                })
+            } catch (error) {
+                console.error("Internal server error:", error)
+                return c.json({ message: "Internal Server Error" }, 500)
             }
-
-            return c.json({
-                message: "Success",
-                data: location,
-            })
         }
     )
     .openapi(
@@ -74,7 +72,7 @@ export const locationRoute = new OpenAPIHono()
                 body: {
                     content: {
                         "application/json": {
-                            schema: LocationRequestSchema,
+                            schema: locationRequestSchema,
                         },
                     },
                 },
@@ -83,11 +81,18 @@ export const locationRoute = new OpenAPIHono()
                 201: {
                     description: "Location created",
                 },
+                409: {
+                    description: "Location with this name already exists",
+                },
             },
             tags: API_TAG,
         },
         async (c) => {
             const body = c.req.valid("json")
+
+            if (locationService.isNameExists(body.name)) {
+                return c.json({ message: "Location with this name already exists" }, 409)
+            }
 
             const locationId = locationService.create(body)
             const location = locationService.getById(locationId)
@@ -125,7 +130,7 @@ export const locationRoute = new OpenAPIHono()
             path: "/{id}",
             description: "Delete location by id",
             request: {
-                params: LocationIdSchema,
+                params: locationIdSchema,
             },
             responses: {
                 200: {
@@ -156,11 +161,11 @@ export const locationRoute = new OpenAPIHono()
             path: "/{id}",
             description: "Update location by id",
             request: {
-                params: LocationIdSchema,
+                params: locationIdSchema,
                 body: {
                     content: {
                         "application/json": {
-                            schema: LocationRequestSchema,
+                            schema: locationRequestSchema,
                         },
                     },
                 },
@@ -171,6 +176,9 @@ export const locationRoute = new OpenAPIHono()
                 },
                 404: {
                     description: "Location not found",
+                },
+                409: {
+                    description: "Location with this name already exists",
                 },
             },
             tags: API_TAG,
@@ -185,12 +193,21 @@ export const locationRoute = new OpenAPIHono()
                 return c.json({ message: "Location not found" }, 404)
             }
 
+            const currentLocation = locationService.getById(id)
+            if (
+                currentLocation &&
+                currentLocation.name !== body.name &&
+                locationService.isNameExists(body.name)
+            ) {
+                return c.json({ message: "Location with this name already exists" }, 409)
+            }
+
             locationService.update(id, body)
-            const location = locationService.getById(id)
+            const updatedLocation = locationService.getById(id)
 
             return c.json({
                 message: "Success",
-                data: location,
+                data: updatedLocation,
             })
         }
     )

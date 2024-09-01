@@ -39,4 +39,7 @@ export const mountainService = {
     isExists(id: number): boolean {
         return mountains.some((mountain) => mountain.id === id)
     },
+    isNameExists(name: string): boolean {
+        return mountains.some((mountain) => mountain.name.toLowerCase() === name.toLowerCase())
+    },
 }

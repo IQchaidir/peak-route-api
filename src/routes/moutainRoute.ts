@@ -1,18 +1,9 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { z } from "zod"
 import { mountainService } from "../services/moutainService"
+import { mountainIdSchema, mountainRequestSchema } from "../schema/mountainSchema"
+import {} from "../schema/locationSchema"
 
 const API_TAG = ["Mountains"]
-
-const MountainRequestSchema = z.object({
-    location_id: z.number().int().positive(),
-    name: z.string().min(1, "Name is required"),
-    elevation: z.number().int().positive(),
-})
-
-const MountainIdSchema = z.object({
-    id: z.string().regex(/^\d+$/, "Invalid ID format"),
-})
 
 export const mountainRoute = new OpenAPIHono()
     .openapi(
@@ -41,7 +32,7 @@ export const mountainRoute = new OpenAPIHono()
             path: "/{id}",
             description: "Get mountain by id",
             request: {
-                params: MountainIdSchema,
+                params: mountainIdSchema,
             },
             responses: {
                 200: {
@@ -75,7 +66,7 @@ export const mountainRoute = new OpenAPIHono()
                 body: {
                     content: {
                         "application/json": {
-                            schema: MountainRequestSchema,
+                            schema: mountainRequestSchema,
                         },
                     },
                 },
@@ -84,11 +75,18 @@ export const mountainRoute = new OpenAPIHono()
                 201: {
                     description: "Mountain created",
                 },
+                409: {
+                    description: "Mountain with this name already exists",
+                },
             },
             tags: API_TAG,
         },
         async (c) => {
             const body = c.req.valid("json")
+
+            if (mountainService.isNameExists(body.name)) {
+                return c.json({ message: "Mountain with this name already exists" }, 409)
+            }
 
             const mountainId = mountainService.create(body)
             const mountain = mountainService.getById(mountainId)
@@ -126,7 +124,7 @@ export const mountainRoute = new OpenAPIHono()
             path: "/{id}",
             description: "Delete mountain by id",
             request: {
-                params: MountainIdSchema,
+                params: mountainIdSchema,
             },
             responses: {
                 200: {
@@ -157,11 +155,11 @@ export const mountainRoute = new OpenAPIHono()
             path: "/{id}",
             description: "Update mountain by id",
             request: {
-                params: MountainIdSchema,
+                params: mountainIdSchema,
                 body: {
                     content: {
                         "application/json": {
-                            schema: MountainRequestSchema,
+                            schema: mountainRequestSchema,
                         },
                     },
                 },
@@ -172,6 +170,9 @@ export const mountainRoute = new OpenAPIHono()
                 },
                 404: {
                     description: "Mountain not found",
+                },
+                409: {
+                    description: "Mountain with this name already exists",
                 },
             },
             tags: API_TAG,
@@ -186,12 +187,21 @@ export const mountainRoute = new OpenAPIHono()
                 return c.json({ message: "Mountain not found" }, 404)
             }
 
+            const currentMountain = mountainService.getById(id)
+            if (
+                currentMountain &&
+                currentMountain.name !== body.name &&
+                mountainService.isNameExists(body.name)
+            ) {
+                return c.json({ message: "Mountain with this name already exists" }, 409)
+            }
+
             mountainService.update(id, body)
-            const mountain = mountainService.getById(id)
+            const updatedMountain = mountainService.getById(id)
 
             return c.json({
                 message: "Success",
-                data: mountain,
+                data: updatedMountain,
             })
         }
     )

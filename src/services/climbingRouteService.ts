@@ -39,4 +39,7 @@ export const climbingRouteService = {
     isExists(id: number): boolean {
         return climbingRoutes.some((route) => route.id === id)
     },
+    isNameExists(name: string): boolean {
+        return climbingRoutes.some((route) => route.route_name.toLowerCase() === name.toLowerCase())
+    },
 }
