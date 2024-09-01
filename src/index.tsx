@@ -3,6 +3,7 @@ import { swaggerUI } from "@hono/swagger-ui"
 import { locationRoute } from "./routes/locationRoute"
 import { mountainRoute } from "./routes/moutainRoute"
 import { climbingRouteRoute } from "./routes/climbingRouteRoute"
+import { HomePage } from "./home-page"
 
 const app = new OpenAPIHono()
     .route("/api/locations", locationRoute)
@@ -20,6 +21,24 @@ const app = new OpenAPIHono()
     })
 
     .get("/ui", swaggerUI({ url: "/docs" }))
+
+    // HOME PAGE
+    .get("/", (c) => {
+        return c.html(
+            <html lang="en">
+                <head>
+                    <meta charset="UTF-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                    <title>Peak Routes REST API</title>
+                    <meta name="description" content="Web API about routes" />
+                    <script src="https://cdn.tailwindcss.com"></script>
+                </head>
+                <body>
+                    <HomePage />
+                </body>
+            </html>
+        )
+    })
 
 export default {
     port: 80,
