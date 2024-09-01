@@ -1,0 +1,27 @@
+services:
+    backend:
+        image: peak-routes-api
+        build:
+            context: .
+        ports:
+            - "3000:80"
+        depends_on:
+            - database
+        develop:
+            watch:
+                - path: .
+                  action: sync
+                  target: /app
+                - path: package.json
+                  action: rebuild
+
+    database:
+        image: postgres:alpine
+        ports:
+            - "5432:5432"
+        env_file:
+            - .env
+        volumes:
+            - peak-routes:/var/lib/postgresql/data
+volumes:
+    peak-routes:
