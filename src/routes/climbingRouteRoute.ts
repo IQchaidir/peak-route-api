@@ -18,7 +18,7 @@ export const climbingRouteRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            const climbingRoutes = climbingRouteService.getAll()
+            const climbingRoutes = await climbingRouteService.getAll()
             return c.json({
                 message: "Success",
                 data: climbingRoutes,
@@ -44,7 +44,8 @@ export const climbingRouteRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            const route = climbingRouteService.getById(Number(c.req.param("id")))
+            const id = Number(c.req.param("id"))
+            const route = await climbingRouteService.getById(id)
 
             if (!route) {
                 return c.json({ message: "Climbing route not found" }, 404)
@@ -83,12 +84,12 @@ export const climbingRouteRoute = new OpenAPIHono()
         async (c) => {
             const body = c.req.valid("json")
 
-            if (climbingRouteService.isNameExists(body.route_name)) {
+            if (await climbingRouteService.isNameExists(body.route_name)) {
                 return c.json({ message: "Climbing route with this name already exists" }, 409)
             }
 
-            const routeId = climbingRouteService.create(body)
-            const route = climbingRouteService.getById(routeId)
+            const routeId = await climbingRouteService.create(body)
+            const route = await climbingRouteService.getById(routeId)
 
             return c.json(
                 {
@@ -112,7 +113,7 @@ export const climbingRouteRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            climbingRouteService.deleteAll()
+            await climbingRouteService.deleteAll()
 
             return c.json({ message: "Success" })
         }
@@ -137,20 +138,20 @@ export const climbingRouteRoute = new OpenAPIHono()
         },
         async (c) => {
             const id = Number(c.req.param("id"))
-            const exists = climbingRouteService.isExists(id)
+            const exists = await climbingRouteService.isExists(id)
 
             if (!exists) {
                 return c.json({ message: "Climbing route not found" }, 404)
             }
 
-            climbingRouteService.deleteById(id)
+            await climbingRouteService.deleteById(id)
 
             return c.json({ message: "Success" })
         }
     )
     .openapi(
         {
-            method: "put",
+            method: "patch",
             path: "/{id}",
             description: "Update climbing route by id",
             request: {
@@ -180,23 +181,23 @@ export const climbingRouteRoute = new OpenAPIHono()
             const body = c.req.valid("json")
             const id = Number(c.req.param("id"))
 
-            const exists = climbingRouteService.isExists(id)
+            const exists = await climbingRouteService.isExists(id)
 
             if (!exists) {
                 return c.json({ message: "Climbing route not found" }, 404)
             }
 
-            const currentRoute = climbingRouteService.getById(id)
+            const currentRoute = await climbingRouteService.getById(id)
             if (
                 currentRoute &&
                 currentRoute.route_name !== body.route_name &&
-                climbingRouteService.isNameExists(body.route_name)
+                (await climbingRouteService.isNameExists(body.route_name))
             ) {
                 return c.json({ message: "Climbing route with this name already exists" }, 409)
             }
 
-            climbingRouteService.update(id, body)
-            const updatedRoute = climbingRouteService.getById(id)
+            await climbingRouteService.update(id, body)
+            const updatedRoute = await climbingRouteService.getById(id)
 
             return c.json({
                 message: "Success",

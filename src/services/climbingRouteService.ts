@@ -1,45 +1,55 @@
-import { ClimbingRoute, defaultClimbingRoutes } from "../data/climbingRoute"
+import { PrismaClient, Climbing_Route } from "@prisma/client"
 
-let climbingRoutes: ClimbingRoute[] = [...defaultClimbingRoutes]
+const prisma = new PrismaClient()
 
 export const climbingRouteService = {
-    getAll(): ClimbingRoute[] {
-        return climbingRoutes
+    async getAll(): Promise<Climbing_Route[]> {
+        return await prisma.climbing_Route.findMany()
     },
-    getById(id: number): ClimbingRoute | undefined {
-        return climbingRoutes.find((route) => route.id === id)
+    async getById(id: number): Promise<Climbing_Route | null> {
+        return await prisma.climbing_Route.findUnique({
+            where: { id },
+        })
     },
-    create(data: Omit<ClimbingRoute, "id" | "createdAt" | "updatedAt">): number {
-        const newId = climbingRoutes.length ? climbingRoutes[climbingRoutes.length - 1].id + 1 : 1
-        const newRoute: ClimbingRoute = {
-            id: newId,
-            ...data,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        }
-        climbingRoutes.push(newRoute)
+    async create(data: Omit<Climbing_Route, "id" | "created_at" | "updated_at">): Promise<number> {
+        const newRoute = await prisma.climbing_Route.create({
+            data: {
+                ...data,
+            },
+        })
         return newRoute.id
     },
-    deleteAll() {
-        climbingRoutes = []
+    async deleteAll(): Promise<void> {
+        await prisma.climbing_Route.deleteMany()
     },
-    deleteById(id: number) {
-        climbingRoutes = climbingRoutes.filter((route) => route.id !== id)
+    async deleteById(id: number): Promise<void> {
+        await prisma.climbing_Route.delete({
+            where: { id },
+        })
     },
-    update(id: number, data: Omit<ClimbingRoute, "id" | "createdAt" | "updatedAt">) {
-        const index = climbingRoutes.findIndex((route) => route.id === id)
-        if (index !== -1) {
-            climbingRoutes[index] = {
-                ...climbingRoutes[index],
+    async update(id: number, data: Omit<Climbing_Route, "id" | "created_at" | "updated_at">): Promise<void> {
+        await prisma.climbing_Route.update({
+            where: { id },
+            data: {
                 ...data,
-                updatedAt: new Date(),
-            }
-        }
+            },
+        })
     },
-    isExists(id: number): boolean {
-        return climbingRoutes.some((route) => route.id === id)
+    async isExists(id: number): Promise<boolean> {
+        const count = await prisma.climbing_Route.count({
+            where: { id },
+        })
+        return count > 0
     },
-    isNameExists(name: string): boolean {
-        return climbingRoutes.some((route) => route.route_name.toLowerCase() === name.toLowerCase())
+    async isNameExists(name: string): Promise<boolean> {
+        const count = await prisma.climbing_Route.count({
+            where: {
+                route_name: {
+                    equals: name,
+                    mode: "insensitive",
+                },
+            },
+        })
+        return count > 0
     },
 }

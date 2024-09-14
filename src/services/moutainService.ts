@@ -1,45 +1,55 @@
-import { defaultMountains, Mountain } from "../data/mountain"
+import { PrismaClient, Mountain } from "@prisma/client"
 
-let mountains: Mountain[] = [...defaultMountains]
+const prisma = new PrismaClient()
 
 export const mountainService = {
-    getAll(): Mountain[] {
-        return mountains
+    async getAll(): Promise<Mountain[]> {
+        return await prisma.mountain.findMany()
     },
-    getById(id: number): Mountain | undefined {
-        return mountains.find((mountain) => mountain.id === id)
+    async getById(id: number): Promise<Mountain | null> {
+        return await prisma.mountain.findUnique({
+            where: { id },
+        })
     },
-    create(data: Omit<Mountain, "id" | "createdAt" | "updatedAt">): number {
-        const newId = mountains.length ? mountains[mountains.length - 1].id + 1 : 1
-        const newMountain: Mountain = {
-            id: newId,
-            ...data,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        }
-        mountains.push(newMountain)
+    async create(data: Omit<Mountain, "id" | "created_at" | "updated_at">): Promise<number> {
+        const newMountain = await prisma.mountain.create({
+            data: {
+                ...data,
+            },
+        })
         return newMountain.id
     },
-    deleteAll() {
-        mountains = []
+    async deleteAll(): Promise<void> {
+        await prisma.mountain.deleteMany()
     },
-    deleteById(id: number) {
-        mountains = mountains.filter((mountain) => mountain.id !== id)
+    async deleteById(id: number): Promise<void> {
+        await prisma.mountain.delete({
+            where: { id },
+        })
     },
-    update(id: number, data: Omit<Mountain, "id" | "createdAt" | "updatedAt">) {
-        const index = mountains.findIndex((mountain) => mountain.id === id)
-        if (index !== -1) {
-            mountains[index] = {
-                ...mountains[index],
+    async update(id: number, data: Omit<Mountain, "id" | "created_at" | "updated_at">): Promise<void> {
+        await prisma.mountain.update({
+            where: { id },
+            data: {
                 ...data,
-                updatedAt: new Date(),
-            }
-        }
+            },
+        })
     },
-    isExists(id: number): boolean {
-        return mountains.some((mountain) => mountain.id === id)
+    async isExists(id: number): Promise<boolean> {
+        const count = await prisma.mountain.count({
+            where: { id },
+        })
+        return count > 0
     },
-    isNameExists(name: string): boolean {
-        return mountains.some((mountain) => mountain.name.toLowerCase() === name.toLowerCase())
+    async isNameExists(name: string): Promise<boolean> {
+        const count = await prisma.mountain.count({
+            where: {
+                name: {
+                    equals: name,
+                    mode: "insensitive",
+                },
+            },
+        })
+        return count > 0
     },
 }

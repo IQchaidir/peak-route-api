@@ -22,7 +22,6 @@ const app = new OpenAPIHono()
 
     .get("/ui", swaggerUI({ url: "/docs" }))
 
-    // HOME PAGE
     .get("/", (c) => {
         return c.html(
             <html lang="en">
@@ -41,6 +40,6 @@ const app = new OpenAPIHono()
     })
 
 export default {
-    port: 80,
+    port: 3000,
     fetch: app.fetch,
 }

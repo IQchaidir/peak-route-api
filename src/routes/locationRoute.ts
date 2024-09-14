@@ -18,12 +18,16 @@ export const locationRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            const locations = locationService.getAll()
-
-            return c.json({
-                message: "Success",
-                data: locations,
-            })
+            try {
+                const locations = await locationService.getAll()
+                return c.json({
+                    message: "Success",
+                    data: locations,
+                })
+            } catch (error) {
+                console.error("Internal server error:", error)
+                return c.json({ message: "Internal Server Error" }, 500)
+            }
         }
     )
     .openapi(
@@ -47,7 +51,7 @@ export const locationRoute = new OpenAPIHono()
         async (c) => {
             try {
                 const locationId = Number(c.req.param("id"))
-                const location = locationService.getById(locationId)
+                const location = await locationService.getById(locationId)
 
                 if (!location) {
                     return c.json({ message: "Location not found" }, 404)
@@ -88,22 +92,27 @@ export const locationRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            const body = c.req.valid("json")
+            try {
+                const body = c.req.valid("json")
 
-            if (locationService.isNameExists(body.name)) {
-                return c.json({ message: "Location with this name already exists" }, 409)
+                if (await locationService.isNameExists(body.province)) {
+                    return c.json({ message: "Location with this name already exists" }, 409)
+                }
+
+                const locationId = await locationService.create(body.province)
+                const location = await locationService.getById(locationId)
+
+                return c.json(
+                    {
+                        message: "Success",
+                        data: location,
+                    },
+                    201
+                )
+            } catch (error) {
+                console.error("Internal server error:", error)
+                return c.json({ message: "Internal Server Error" }, 500)
             }
-
-            const locationId = locationService.create(body)
-            const location = locationService.getById(locationId)
-
-            return c.json(
-                {
-                    message: "Success",
-                    data: location,
-                },
-                201
-            )
         }
     )
     .openapi(
@@ -119,9 +128,13 @@ export const locationRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            locationService.deleteAll()
-
-            return c.json({ message: "Success" })
+            try {
+                await locationService.deleteAll()
+                return c.json({ message: "Success" })
+            } catch (error) {
+                console.error("Internal server error:", error)
+                return c.json({ message: "Internal Server Error" }, 500)
+            }
         }
     )
     .openapi(
@@ -143,21 +156,25 @@ export const locationRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            const id = Number(c.req.param("id"))
-            const exists = locationService.isExists(id)
+            try {
+                const id = Number(c.req.param("id"))
+                const exists = await locationService.isExists(id)
 
-            if (!exists) {
-                return c.json({ message: "Location not found" }, 404)
+                if (!exists) {
+                    return c.json({ message: "Location not found" }, 404)
+                }
+
+                await locationService.deleteById(id)
+                return c.json({ message: "Success" })
+            } catch (error) {
+                console.error("Internal server error:", error)
+                return c.json({ message: "Internal Server Error" }, 500)
             }
-
-            locationService.deleteById(id)
-
-            return c.json({ message: "Success" })
         }
     )
     .openapi(
         {
-            method: "put",
+            method: "patch",
             path: "/{id}",
             description: "Update location by id",
             request: {
@@ -184,30 +201,35 @@ export const locationRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            const body = c.req.valid("json")
-            const id = Number(c.req.param("id"))
+            try {
+                const body = c.req.valid("json")
+                const id = Number(c.req.param("id"))
 
-            const exists = locationService.isExists(id)
+                const exists = await locationService.isExists(id)
 
-            if (!exists) {
-                return c.json({ message: "Location not found" }, 404)
+                if (!exists) {
+                    return c.json({ message: "Location not found" }, 404)
+                }
+
+                const currentLocation = await locationService.getById(id)
+                if (
+                    currentLocation &&
+                    currentLocation.province !== body.province &&
+                    (await locationService.isNameExists(body.province))
+                ) {
+                    return c.json({ message: "Location with this name already exists" }, 409)
+                }
+
+                await locationService.update(id, body.province)
+                const updatedLocation = await locationService.getById(id)
+
+                return c.json({
+                    message: "Success",
+                    data: updatedLocation,
+                })
+            } catch (error) {
+                console.error("Internal server error:", error)
+                return c.json({ message: "Internal Server Error" }, 500)
             }
-
-            const currentLocation = locationService.getById(id)
-            if (
-                currentLocation &&
-                currentLocation.name !== body.name &&
-                locationService.isNameExists(body.name)
-            ) {
-                return c.json({ message: "Location with this name already exists" }, 409)
-            }
-
-            locationService.update(id, body)
-            const updatedLocation = locationService.getById(id)
-
-            return c.json({
-                message: "Success",
-                data: updatedLocation,
-            })
         }
     )

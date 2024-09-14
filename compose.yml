@@ -4,24 +4,23 @@ services:
         build:
             context: .
         ports:
-            - "3000:80"
+            - "3000:3000"
+        volumes:
+            - .:/app # Sync direktori lokal ke dalam container (untuk hot-reload)
+            - /app/node_modules # Volume ini mencegah node_modules ter-overwrite
+        environment:
+            - DATABASE_URL=postgresql://iqbal:postgres@database:5432/peak_routes?schema=public
         depends_on:
             - database
-        develop:
-            watch:
-                - path: .
-                  action: sync
-                  target: /app
-                - path: package.json
-                  action: rebuild
 
     database:
-        image: postgres:alpine
+        image: postgres:15-alpine
         ports:
             - "5432:5432"
         env_file:
             - .env
         volumes:
             - peak-routes:/var/lib/postgresql/data
+
 volumes:
     peak-routes:

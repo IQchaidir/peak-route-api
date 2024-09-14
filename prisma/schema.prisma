@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Location {
+  id         Int       @id @default(autoincrement())
+  province   String    @db.VarChar(100)
+  mountains  Mountain[] 
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  @@map("locations")
+}
+
+model Mountain {
+  id              Int              @id @default(autoincrement())
+  location_id     Int
+  climbing_routes Climbing_Route[]
+  name            String           @db.VarChar(100)
+  elevation       Int
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+  location        Location         @relation(fields: [location_id], references: [id], onDelete: Cascade) 
+
+  @@map("mountains")
+}
+
+model Climbing_Route {
+  id          Int      @id @default(autoincrement())
+  mountain_id Int
+  route_name  String   @db.VarChar(100)
+  length      Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  mountain    Mountain @relation(fields: [mountain_id], references: [id], onDelete: Cascade)
+
+  @@map("climbing_routes")
+}

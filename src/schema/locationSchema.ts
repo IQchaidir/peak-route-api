@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const locationRequestSchema = z.object({
-    name: z.string().min(1).openapi({ example: "Kalimantan Timur" }),
+    province: z.string().min(1).openapi({ example: "Kalimantan Timur" }),
 })
 
 export const locationIdSchema = z.object({

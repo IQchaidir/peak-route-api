@@ -1,45 +1,55 @@
-import { defaultLocations, Location } from "../data/location"
+import { PrismaClient, Location } from "@prisma/client"
 
-let locations: Location[] = [...defaultLocations]
+const prisma = new PrismaClient()
 
 export const locationService = {
-    getAll(): Location[] {
-        return locations
+    async getAll(): Promise<Location[]> {
+        return await prisma.location.findMany()
     },
-    getById(id: number): Location | undefined {
-        return locations.find((location) => location.id === id)
+    async getById(id: number): Promise<Location | null> {
+        return await prisma.location.findUnique({
+            where: { id },
+        })
     },
-    isExists(id: number): boolean {
-        return locations.some((location) => location.id === id)
+    async isExists(id: number): Promise<boolean> {
+        const count = await prisma.location.count({
+            where: { id },
+        })
+        return count > 0
     },
-    isNameExists(name: string): boolean {
-        return locations.some((location) => location.name.toLowerCase() === name.toLowerCase())
+    async isNameExists(name: string): Promise<boolean> {
+        const count = await prisma.location.count({
+            where: {
+                province: {
+                    equals: name,
+                    mode: "insensitive",
+                },
+            },
+        })
+        return count > 0
     },
-    create(data: Omit<Location, "id" | "createdAt" | "updatedAt">): number {
-        const newId = locations.length ? locations[locations.length - 1].id + 1 : 1
-        const newLocation: Location = {
-            id: newId,
-            ...data,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        }
-        locations.push(newLocation)
+    async create(province: string): Promise<number> {
+        const newLocation = await prisma.location.create({
+            data: {
+                province,
+            },
+        })
         return newLocation.id
     },
-    deleteAll() {
-        locations = []
+    async deleteAll(): Promise<void> {
+        await prisma.location.deleteMany()
     },
-    deleteById(id: number) {
-        locations = locations.filter((location) => location.id !== id)
+    async deleteById(id: number): Promise<void> {
+        await prisma.location.delete({
+            where: { id },
+        })
     },
-    update(id: number, data: Omit<Location, "id" | "createdAt" | "updatedAt">) {
-        const index = locations.findIndex((location) => location.id === id)
-        if (index !== -1) {
-            locations[index] = {
-                ...locations[index],
-                ...data,
-                updatedAt: new Date(),
-            }
-        }
+    async update(id: number, province: string): Promise<void> {
+        await prisma.location.update({
+            where: { id },
+            data: {
+                province,
+            },
+        })
     },
 }

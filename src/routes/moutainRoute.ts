@@ -1,7 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import { mountainService } from "../services/moutainService"
 import { mountainIdSchema, mountainRequestSchema } from "../schema/mountainSchema"
-import {} from "../schema/locationSchema"
+import { mountainService } from "../services/moutainService"
 
 const API_TAG = ["Mountains"]
 
@@ -19,7 +18,7 @@ export const mountainRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            const mountains = mountainService.getAll()
+            const mountains = await mountainService.getAll()
             return c.json({
                 message: "Success",
                 data: mountains,
@@ -45,7 +44,8 @@ export const mountainRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            const mountain = mountainService.getById(Number(c.req.param("id")))
+            const id = Number(c.req.param("id"))
+            const mountain = await mountainService.getById(id)
 
             if (!mountain) {
                 return c.json({ message: "Mountain not found" }, 404)
@@ -84,12 +84,12 @@ export const mountainRoute = new OpenAPIHono()
         async (c) => {
             const body = c.req.valid("json")
 
-            if (mountainService.isNameExists(body.name)) {
+            if (await mountainService.isNameExists(body.name)) {
                 return c.json({ message: "Mountain with this name already exists" }, 409)
             }
 
-            const mountainId = mountainService.create(body)
-            const mountain = mountainService.getById(mountainId)
+            const mountainId = await mountainService.create(body)
+            const mountain = await mountainService.getById(mountainId)
 
             return c.json(
                 {
@@ -113,7 +113,7 @@ export const mountainRoute = new OpenAPIHono()
             tags: API_TAG,
         },
         async (c) => {
-            mountainService.deleteAll()
+            await mountainService.deleteAll()
 
             return c.json({ message: "Success" })
         }
@@ -138,20 +138,19 @@ export const mountainRoute = new OpenAPIHono()
         },
         async (c) => {
             const id = Number(c.req.param("id"))
-            const exists = mountainService.isExists(id)
-
+            const exists = await mountainService.isExists(id)
             if (!exists) {
                 return c.json({ message: "Mountain not found" }, 404)
             }
 
-            mountainService.deleteById(id)
+            await mountainService.deleteById(id)
 
             return c.json({ message: "Success" })
         }
     )
     .openapi(
         {
-            method: "put",
+            method: "patch",
             path: "/{id}",
             description: "Update mountain by id",
             request: {
@@ -181,23 +180,23 @@ export const mountainRoute = new OpenAPIHono()
             const body = c.req.valid("json")
             const id = Number(c.req.param("id"))
 
-            const exists = mountainService.isExists(id)
+            const exists = await mountainService.isExists(id)
 
             if (!exists) {
                 return c.json({ message: "Mountain not found" }, 404)
             }
 
-            const currentMountain = mountainService.getById(id)
+            const currentMountain = await mountainService.getById(id)
             if (
                 currentMountain &&
                 currentMountain.name !== body.name &&
-                mountainService.isNameExists(body.name)
+                (await mountainService.isNameExists(body.name))
             ) {
                 return c.json({ message: "Mountain with this name already exists" }, 409)
             }
 
-            mountainService.update(id, body)
-            const updatedMountain = mountainService.getById(id)
+            await mountainService.update(id, body)
+            const updatedMountain = await mountainService.getById(id)
 
             return c.json({
                 message: "Success",
