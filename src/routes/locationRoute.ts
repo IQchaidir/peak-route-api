@@ -174,7 +174,7 @@ export const locationRoute = new OpenAPIHono()
     )
     .openapi(
         {
-            method: "patch",
+            method: "put",
             path: "/{id}",
             description: "Update location by id",
             request: {

@@ -12,13 +12,13 @@ export const locationService = {
         })
     },
     async isExists(id: number): Promise<boolean> {
-        const count = await prisma.location.count({
+        const location = await prisma.location.findUnique({
             where: { id },
         })
-        return count > 0
+        return location != null
     },
     async isNameExists(name: string): Promise<boolean> {
-        const count = await prisma.location.count({
+        const location = await prisma.location.findFirst({
             where: {
                 province: {
                     equals: name,
@@ -26,7 +26,7 @@ export const locationService = {
                 },
             },
         })
-        return count > 0
+        return location != null
     },
     async create(province: string): Promise<number> {
         const newLocation = await prisma.location.create({

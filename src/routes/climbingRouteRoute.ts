@@ -151,7 +151,7 @@ export const climbingRouteRoute = new OpenAPIHono()
     )
     .openapi(
         {
-            method: "patch",
+            method: "put",
             path: "/{id}",
             description: "Update climbing route by id",
             request: {

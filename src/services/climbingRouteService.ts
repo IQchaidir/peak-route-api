@@ -36,13 +36,13 @@ export const climbingRouteService = {
         })
     },
     async isExists(id: number): Promise<boolean> {
-        const count = await prisma.climbing_Route.count({
+        const route = await prisma.climbing_Route.findUnique({
             where: { id },
         })
-        return count > 0
+        return route !== null
     },
     async isNameExists(name: string): Promise<boolean> {
-        const count = await prisma.climbing_Route.count({
+        const route = await prisma.climbing_Route.findFirst({
             where: {
                 route_name: {
                     equals: name,
@@ -50,6 +50,6 @@ export const climbingRouteService = {
                 },
             },
         })
-        return count > 0
+        return route !== null
     },
 }

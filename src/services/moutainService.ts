@@ -36,13 +36,13 @@ export const mountainService = {
         })
     },
     async isExists(id: number): Promise<boolean> {
-        const count = await prisma.mountain.count({
+        const mountain = await prisma.mountain.findUnique({
             where: { id },
         })
-        return count > 0
+        return mountain !== null
     },
     async isNameExists(name: string): Promise<boolean> {
-        const count = await prisma.mountain.count({
+        const mountain = await prisma.mountain.findFirst({
             where: {
                 name: {
                     equals: name,
@@ -50,6 +50,6 @@ export const mountainService = {
                 },
             },
         })
-        return count > 0
+        return mountain !== null
     },
 }

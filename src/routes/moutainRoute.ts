@@ -150,7 +150,7 @@ export const mountainRoute = new OpenAPIHono()
     )
     .openapi(
         {
-            method: "patch",
+            method: "put",
             path: "/{id}",
             description: "Update mountain by id",
             request: {
